@@ -1,13 +1,12 @@
 import pandas as pd
 from scipy.optimize import linear_sum_assignment
 
+PENALTY = 20
 NAME_COL = "Name"
-LENGTH_COL = "Length"
 
-groomsmen_df = pd.read_csv("men.csv")
-suits_df = pd.read_csv("kurtas.csv")
 
 TO_DROP = [NAME_COL]
+PENALTY_COLS = {"Shoulder", "Chest", "Sleeve"}
 
 
 def assign_suits(groomsmen_df, suits_df):
@@ -19,11 +18,26 @@ def assign_suits(groomsmen_df, suits_df):
 
     for _, groomsman in groomsmen_df.iterrows():
         groomsman_measurements = groomsman[common_columns]
-        differences = (
-            suits_df[common_columns].sub(groomsman_measurements.values, axis=1).abs()
-        )
-        total_differences = differences.sum(axis=1)
-        cost_matrix.append(total_differences.values)
+        differences = suits_df[common_columns]
+
+        cost_row = []
+
+        for index, suit in differences.iterrows():
+            cost = 0
+            for measurement in common_columns:
+                if (
+                    suit[measurement] < groomsman_measurements[measurement]
+                    and measurement in PENALTY_COLS
+                ):
+                    # Apply penalty if the suit is too small
+                    cost += PENALTY + abs(
+                        suit[measurement] - groomsman_measurements[measurement]
+                    )
+                else:
+                    cost += abs(suit[measurement] - groomsman_measurements[measurement])
+            cost_row.append(cost)
+
+        cost_matrix.append(cost_row)
 
     cost_matrix = pd.DataFrame(cost_matrix, columns=suits_df[NAME_COL])
     print(cost_matrix.head(10))
@@ -43,6 +57,9 @@ def assign_suits(groomsmen_df, suits_df):
 
 
 if __name__ == "__main__":
+    groomsmen_df = pd.read_csv("men.csv")
+    suits_df = pd.read_csv("kurtas.csv")
+
     suit_assignments = assign_suits(groomsmen_df, suits_df)
 
     print(suit_assignments)
