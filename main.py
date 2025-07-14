@@ -1,6 +1,6 @@
 import pandas as pd
 
-from hungarian import assign_suits
+from algorithm.hungarian import assign_suits
 
 PENALTY = 20
 NAME_COL = "Name"
